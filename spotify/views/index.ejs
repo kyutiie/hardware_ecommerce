@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify-like Music Player</title>
+    <style>
+        /* Basic styling for layout */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #addSongButton {
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #addSongButton:hover {
+            background-color: #218838;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+        }
+        #songs, #playlist {
+            flex: 1;
+            margin: 0 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        #songs h2, #playlist h2 {
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+        #nowPlaying {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .song-container {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .song-container img {
+            margin-right: 10px;
+        }
+        .play-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .play-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Spotify-like Music Player</h1>
+    
+    <button id="addSongButton" onclick="openAddSongForm()">Add Song</button>
+    
+    <div class="container">
+        <div id="songs">
+            <h2>Available Songs</h2>
+            <% if (songs && songs.length > 0) { %>
+                <% songs.forEach(song => { %>
+                    <div class="song-container">
+                        <h3><%= song.title %> by <%= song.artist || 'Unknown Artist' %></h3>
+                        
+                        <img src="/images/<%= song.image_path %>" alt="<%= song.title %> cover" width="100" />
+                        
+                        <audio controls id="audio-<%= song.id %>" onplay="incrementPlayCount(<%= song.id %>)">
+                            <source src="/music/<%= song.file_path %>" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        
+                        <p>Played: <%= song.play_count %> times</p>
+                        
+                        <!-- Add to Playlist Button -->
+                        <button class="play-button" onclick="addToPlaylist(<%= song.id %>, '<%= song.title %>', '<%= song.artist || 'Unknown Artist' %>', '<%= song.image_path %>', '<%= song.file_path %>')">Add to Playlist</button>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>No songs available.</p>
+            <% } %>
+            
+            <div id="nowPlaying">
+                <h3>Now Playing:</h3>
+                <p id="currentSong">Select a song to play.</p>
+            </div>
+        </div>
+
+        <div id="playlist">
+            <h2>Your Playlist</h2>
+            <table id="playlistTable">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Title</th>
+                        <th>Artist</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Playlist items will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Function to increment play count
+        function incrementPlayCount(songId) {
+            fetch(`/play-song/${songId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update play count');
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log(data); // Log success message
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Function to add a song to the playlist
+        function addToPlaylist(id, title, artist, imagePath, filePath) {
+            const table = document.getElementById("playlistTable").getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+
+            const imgCell = newRow.insertCell(0);
+            const titleCell = newRow.insertCell(1);
+            const artistCell = newRow.insertCell(2);
+            const actionCell = newRow.insertCell(3);
+
+            imgCell.innerHTML = `<img src="/images/${imagePath}" alt="${title} cover" width="50" />`;
+            titleCell.textContent = title;
+            artistCell.textContent = artist;
+
+            const playButton = document.createElement("button");
+            playButton.textContent = "Play";
+            playButton.className = "play-button";
+            playButton.onclick = function() {
+                playSong(title, artist, imagePath, filePath);
+            };
+            actionCell.appendChild(playButton);
+        }
+
+        // Function to play the selected song
+        function playSong(title, artist, imagePath, filePath) {
+            const audio = new Audio(`/music/${filePath}`);
+            audio.play();
+            
+            // Update Now Playing section
+            const currentSong = document.getElementById("currentSong");
+            currentSong.innerHTML = `<strong>${title}</strong> by <strong>${artist}</strong>`;
+        }
+
+        // Function to open the add song form
+        function openAddSongForm() {
+            alert('Open the form to add a new song'); // Replace this with actual form logic
+        }
+    </script>
+</body>
+</html>
